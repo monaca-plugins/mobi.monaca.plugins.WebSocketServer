@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="mobi.monaca.plugins.WebSocketServer"
+    version="1.0.0">
+
+    <name>WebSocketServer</name>
+	<description>WebSocketServer</description>
+    <engines>
+        <engine name="cordova" version=">=2.9.0" />
+    </engines>
+    <license>Asial</license>
+    <platform name="android">
+        <config-file target="config.xml" parent="/*">
+            <feature name="WebSocketServer">
+                <param name="android-package" value="mobi.monaca.framework.plugin.WebSocketPlugin"/>
+            </feature>
+        </config-file>
+    </platform>
+</plugin>
