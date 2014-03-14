@@ -11,7 +11,7 @@
     </engines>
     <license>Asial</license>
     <platform name="android">
-        <config-file target="config.xml" parent="/*">
+        <config-file target="res/xml/config.xml" parent="/*">
             <feature name="WebSocketServer">
                 <param name="android-package" value="mobi.monaca.framework.plugin.WebSocketPlugin"/>
             </feature>
