@@ -10,11 +10,20 @@
         <engine name="cordova" version=">=2.9.0" />
     </engines>
     <license>Asial</license>
+
+    <js-module src="www/webSocketServer.js" name="WebSocketServer">
+        <clobbers target="monaca.WebSocketServer" />
+    </js-module>
+
+    <!-- android -->
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="WebSocketServer">
                 <param name="android-package" value="mobi.monaca.framework.plugin.WebSocketPlugin"/>
             </feature>
         </config-file>
+
+        <source-file src="src/android/libs/java_websocket.jar" target-dir="libs/" />
+        <source-file src="src/android/WebSocketPlugin.java" target-dir="src/mobi/monaca/framework/plugin"/>
     </platform>
 </plugin>
