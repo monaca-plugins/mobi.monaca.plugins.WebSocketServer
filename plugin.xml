@@ -12,7 +12,7 @@
     <license>Asial</license>
 
     <js-module src="www/webSocketServer.js" name="WebSocketServer">
-        <clobbers target="monaca.WebSocketServer" />
+        <clobbers target="plugins.webSocketServer" />
     </js-module>
 
     <!-- android -->

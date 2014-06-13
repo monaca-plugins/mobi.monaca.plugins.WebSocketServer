@@ -1,19 +1,20 @@
 package mobi.monaca.framework.plugin;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
-import mobi.monaca.framework.MonacaApplication;
-import mobi.monaca.framework.psedo.R;
-import mobi.monaca.framework.util.NetworkUtils;
-
-import org.apache.cordova.api.CallbackContext;
-import org.apache.cordova.api.CordovaPlugin;
-import org.apache.cordova.api.PluginResult;
-import org.apache.cordova.api.PluginResult.Status;
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
+import org.apache.cordova.PluginResult.Status;
+import org.apache.http.conn.util.InetAddressUtils;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -40,7 +41,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 			JSONObject result;
 			try {
 				result = createAddressJSON();
-				result.put(MonacaApplication.getStringFromResource(R.string.nc_key_event), "server:started");
+				result.put("event", "server:started");
 				PluginResult pluginResult = new PluginResult(Status.OK, result);
 				pluginResult.setKeepCallback(true);
 				callbackContext.sendPluginResult(pluginResult);
@@ -108,7 +109,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 			}else{
 				JSONObject params = args.getJSONObject(0);
 				String clientId = params.getString("clientId");
-				String message = params.getString(MonacaApplication.getStringFromResource(R.string.key_message));
+				String message = params.getString("message");
 				if(sockets.containsKey(clientId)){
 					WebSocket webSocket = sockets.get(clientId);
 					webSocket.send(message);
@@ -125,7 +126,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 				callbackContext.error("You need to start server before sending a message");
 			}else{
 				JSONObject params = args.getJSONObject(0);
-				String message = params.getString(MonacaApplication.getStringFromResource(R.string.key_message));
+				String message = params.getString("message");
 				Set<String> clients = sockets.keySet();
 				WebSocket webSocket;
 				for (String client : clients) {
@@ -166,7 +167,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 
 	private JSONObject createAddressJSON() throws JSONException, SocketException {
 		JSONObject result = new JSONObject();
-		result.put("networks", NetworkUtils.getIPAddresses());
+		result.put("networks", getIPAddresses());
 		result.put("port", port);
 		return result;
 	}
@@ -195,7 +196,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 				sockets.remove(clientId);
 				try {
 					JSONObject message = createJSONMessage("disconnected", clientId);
-					message.put(MonacaApplication.getStringFromResource(R.string.key_message), msg);
+					message.put("message", msg);
 					PluginResult pluginResult = new PluginResult(Status.OK, message);
 					pluginResult.setKeepCallback(true);
 					WebSocketPlugin.this.callbackContext.sendPluginResult(pluginResult);
@@ -209,7 +210,7 @@ public class WebSocketPlugin extends CordovaPlugin{
 				String clientId = getClientId(webSocket);
 				try {
 					JSONObject message = createJSONMessage("error", clientId);
-					message.put(MonacaApplication.getStringFromResource(R.string.key_message), msg.toString());
+					message.put("message", msg.toString());
 					PluginResult pluginResult = new PluginResult(Status.OK, message);
 					pluginResult.setKeepCallback(true);
 					WebSocketPlugin.this.callbackContext.sendPluginResult(pluginResult);
@@ -222,8 +223,8 @@ public class WebSocketPlugin extends CordovaPlugin{
 			public void onMessage(WebSocket webSocket, String msg) {
 				String clientId = getClientId(webSocket);
 				try {
-					JSONObject message = createJSONMessage(MonacaApplication.getStringFromResource(R.string.key_message), clientId);
-					message.put(MonacaApplication.getStringFromResource(R.string.key_message), msg);
+					JSONObject message = createJSONMessage("message", clientId);
+					message.put("message", msg);
 					PluginResult pluginResult = new PluginResult(Status.OK, message);
 					pluginResult.setKeepCallback(true);
 					WebSocketPlugin.this.callbackContext.sendPluginResult(pluginResult);
@@ -260,8 +261,58 @@ public class WebSocketPlugin extends CordovaPlugin{
 	private JSONObject createJSONMessage(String event, String clientId)
 			throws JSONException {
 			JSONObject message = new JSONObject();
-			message.put(MonacaApplication.getStringFromResource(R.string.nc_key_event), event);
+			message.put("event", event);
 			message.put("client", clientId);
 			return message;
 	}
+	
+	private String getIPAddress(boolean useIPv4) {
+		try {
+			List<NetworkInterface> interfaces = Collections
+					.list(NetworkInterface.getNetworkInterfaces());
+			for (NetworkInterface intf : interfaces) {
+				List<InetAddress> addrs = Collections.list(intf
+						.getInetAddresses());
+				for (InetAddress addr : addrs) {
+					if (!addr.isLoopbackAddress()) {
+						String sAddr = addr.getHostAddress().toUpperCase();
+						boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
+						if (useIPv4) {
+							if (isIPv4)
+								return sAddr;
+						} else {
+							if (!isIPv4) {
+								int delim = sAddr.indexOf('%'); // drop ip6 port
+																// suffix
+								return delim < 0 ? sAddr : sAddr.substring(0,
+										delim);
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception ex) {
+		} // for now eat exceptions
+		return "";
+	}
+
+	private JSONObject getIPAddresses() throws SocketException, JSONException {
+		JSONObject networkJson= new JSONObject();
+		List<NetworkInterface> interfaces = Collections.list(NetworkInterface
+				.getNetworkInterfaces());
+		for (NetworkInterface intf : interfaces) {
+			List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+			for (InetAddress addr : addrs) {
+				if (!addr.isLoopbackAddress()) {
+					String ipAddress = addr.getHostAddress().toUpperCase();
+					boolean isIPv4 = InetAddressUtils.isIPv4Address(ipAddress);
+					if (isIPv4) {						
+						String interfacename = intf.getName();
+						networkJson.put(interfacename, ipAddress);
+					}
+				}
+			}
+		}
+		return networkJson;
+	}	
 }
