@@ -5,7 +5,9 @@
     version="1.0.0">
 
     <name>WebSocketServer</name>
-	<description>WebSocketServer</description>
+	<description>
+        Use this pliugin to create different channels over one HTTP connection
+    </description>
     <engines>
         <engine name="cordova" version=">=2.9.0" />
     </engines>
